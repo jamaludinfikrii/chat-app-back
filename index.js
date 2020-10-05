@@ -18,7 +18,7 @@ io.on('connection' , (socket) => {
 
     // form login
         // add user login to database
-        // send user login to all client
+        // send user login to all client except sender
         // send greeting message to client
     
     socket.on('user-login' , (name) => {
@@ -26,8 +26,17 @@ io.on('connection' , (socket) => {
         socket.broadcast.emit('user-login' , name + ' has joined the chat')
         socket.emit('user-login','welcome to the chat ' + name)
     })
+
+    // user send message
+        // send message to db
+        // send message to all client
     
-        
+    socket.on('send-message' , (data) => {
+        console.log(data) // {username, message}
+        io.emit('send-message' , data)
+
+    })
+    
     
     socket.on('disconnect' , () => {
         let index = userConnected.indexOf(socket.id)
