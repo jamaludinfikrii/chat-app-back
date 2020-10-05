@@ -13,18 +13,22 @@ const io = socket(httpApp)
 
 let userConnected = []
 io.on('connection' , (socket) => {
-    userConnected.push(socket.id)
-    console.log('user connected with id ' + socket.id)
 
     // form login
         // add user login to database
         // send user login to all client except sender
+        // send previous message
         // send greeting message to client
     
     socket.on('user-login' , (name) => {
+        userConnected.push({
+            id : socket.id,
+            username : name
+        })
         console.log(name)
-        socket.broadcast.emit('user-login' , name + ' has joined the chat')
-        socket.emit('user-login','welcome to the chat ' + name)
+        socket.broadcast.emit('send-message' ,{username : "bot" , message : name + ' has joined the chat'})
+        socket.emit('send-message',{username : "bot", message :'welcome to the chat ' + name})
+        io.emit('user-online',userConnected)
     })
 
     // user send message
@@ -37,10 +41,27 @@ io.on('connection' , (socket) => {
 
     })
     
+    // user disconnect
+        // get username on userConnected
+        // send to all user except sender that user has ledt the chat
+
     
     socket.on('disconnect' , () => {
-        let index = userConnected.indexOf(socket.id)
-        console.log('user disconnected with id = ' + userConnected[index])
+        let index = -1
+        console.log(userConnected)
+        userConnected.forEach((val,idx) => {
+            if(val.id === socket.id){
+                index = idx
+            }
+        })
+        console.log(index)
+        if(index !== -1){
+            let username = userConnected[index].username
+            userConnected.splice(index,1)
+            socket.broadcast.emit('send-message' , {username : "bot",message : username + ' has left the chat'})
+            io.emit('user-online',userConnected)
+        }
+
     })
 })
 
