@@ -16,11 +16,19 @@ io.on('connection' , (socket) => {
     userConnected.push(socket.id)
     console.log('user connected with id ' + socket.id)
 
-    socket.on('test', (data) => {
-        console.log(data)
-        socket.emit('test' , data + " susilo")
+    // form login
+        // add user login to database
+        // send user login to all client
+        // send greeting message to client
+    
+    socket.on('user-login' , (name) => {
+        console.log(name)
+        socket.broadcast.emit('user-login' , name + ' has joined the chat')
+        socket.emit('user-login','welcome to the chat ' + name)
     })
-
+    
+        
+    
     socket.on('disconnect' , () => {
         let index = userConnected.indexOf(socket.id)
         console.log('user disconnected with id = ' + userConnected[index])
