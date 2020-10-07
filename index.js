@@ -11,6 +11,15 @@ const httpApp = http.createServer(app)
 const PORT = 5000
 const io = socket(httpApp)
 
+
+// db connection
+const db = mysql.createConnection({
+    user : "root",
+    password : "111111111",
+    database : "chat-app",
+    port : 3306
+})
+
 let userConnected = []
 io.on('connection' , (socket) => {
 
@@ -28,14 +37,33 @@ io.on('connection' , (socket) => {
             room : room
         })
         console.log(name)
-
         socket.join(room)
-
         let userInRoom = userConnected.filter((val) => val.room === room)
         
-        socket.to(room).emit('send-message' ,{username : "bot" , message : name + ' has joined the room ' + room})
-        socket.emit('send-message',{username : "bot", message :'welcome to the chat ' + name + ', you in room ' + room})
-        io.in(room).emit('user-online',userInRoom)
+        db.query('select * from chats where room = ?' , room,(err,result) => {
+            try {
+                if(err) throw err
+
+                // result = [{username, chat,created_at,room}]
+                let dataChat = result.map((val) => {
+                    return {
+                        username : val.username,
+                        message : val.chat
+                    }
+                })
+
+                dataChat.push({username : "bot", message :'welcome to the chat ' + name + ', you in room ' + room})
+
+                socket.to(room).emit('send-message' ,[{username : "bot" , message : name + ' has joined the room ' + room}])
+
+                socket.emit('send-message',dataChat)
+                io.in(room).emit('user-online',userInRoom)
+            } catch (error) {
+                
+            }
+        })
+
+       
             
       
     })
@@ -55,8 +83,23 @@ io.on('connection' , (socket) => {
         })
 
         let room = userConnected[index].room
-        console.log(data) // {username, message}
-        io.in(room).emit('send-message' , data)
+        console.log(data) // {username, message}        
+       
+        let dataToInsert = {
+            username : data.username,
+            chat : data.message,
+            room : room
+        }
+
+        db.query('insert into chats set ?' , dataToInsert, (err,result) => {
+            try {
+                if(err) throw err
+                io.in(room).emit('send-message' , [data])
+            } catch (error) {
+                console.log(error)
+            }
+        })
+
 
     })
     
@@ -80,7 +123,7 @@ io.on('connection' , (socket) => {
             userConnected.splice(index,1)
 
             let userInRoom = userConnected.filter((val) => val.room === room)
-            socket.to(room).emit('send-message' , {username : "bot",message : username + ' has left the chat'})
+            socket.to(room).emit('send-message' , [{username : "bot",message : username + ' has left the chat'}])
             io.in(room).emit('user-online',userInRoom)
         }
 
