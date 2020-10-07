@@ -20,15 +20,24 @@ io.on('connection' , (socket) => {
         // send previous message
         // send greeting message to client
     
-    socket.on('user-login' , (name) => {
+    socket.on('user-login' , ({name,room}) => {
+        console.log(room)
         userConnected.push({
             id : socket.id,
-            username : name
+            username : name,
+            room : room
         })
         console.log(name)
-        socket.broadcast.emit('send-message' ,{username : "bot" , message : name + ' has joined the chat'})
-        socket.emit('send-message',{username : "bot", message :'welcome to the chat ' + name})
-        io.emit('user-online',userConnected)
+
+        socket.join(room)
+
+        let userInRoom = userConnected.filter((val) => val.room === room)
+        
+        socket.to(room).emit('send-message' ,{username : "bot" , message : name + ' has joined the room ' + room})
+        socket.emit('send-message',{username : "bot", message :'welcome to the chat ' + name + ', you in room ' + room})
+        io.in(room).emit('user-online',userInRoom)
+            
+      
     })
 
     // user send message
@@ -36,8 +45,18 @@ io.on('connection' , (socket) => {
         // send message to all client
     
     socket.on('send-message' , (data) => {
+
+        let index = -1
+        console.log(userConnected)
+        userConnected.forEach((val,idx) => {
+            if(val.id === socket.id){
+                index = idx
+            }
+        })
+
+        let room = userConnected[index].room
         console.log(data) // {username, message}
-        io.emit('send-message' , data)
+        io.in(room).emit('send-message' , data)
 
     })
     
@@ -57,9 +76,12 @@ io.on('connection' , (socket) => {
         console.log(index)
         if(index !== -1){
             let username = userConnected[index].username
+            let room = userConnected[index].room
             userConnected.splice(index,1)
-            socket.broadcast.emit('send-message' , {username : "bot",message : username + ' has left the chat'})
-            io.emit('user-online',userConnected)
+
+            let userInRoom = userConnected.filter((val) => val.room === room)
+            socket.to(room).emit('send-message' , {username : "bot",message : username + ' has left the chat'})
+            io.in(room).emit('user-online',userInRoom)
         }
 
     })
