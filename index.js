@@ -14,11 +14,14 @@ const io = socket(httpApp)
 
 // db connection
 const db = mysql.createConnection({
-    user : "root",
-    password : "111111111",
-    database : "chat-app",
+    host : "sql12.freemysqlhosting.net",
+    user : "sql12369459",
+    password : "vuXegAVgqQ",
+    database : "sql12369459",
     port : 3306
 })
+
+db.connect()
 
 let userConnected = []
 io.on('connection' , (socket) => {
